@@ -78,11 +78,15 @@ def fft_features(arr):
 
 def process_img_stats(df):
 
+    df_real = df[df['label']==0]
+    df_ai = df[df['label']==1].sample(n=len(df_real),random_state=1)
+    df_balanced = pd.concat([df_ai,df_real]).sample(frac=1,random_state=1)
+
     X = []
     y = []
     counter = 0
 
-    for img, label in zip(df['image'], df['label']):
+    for img, label in zip(df_balanced['image'], df_balanced['label']):
         if counter % 100 == 0:
             print("Bild: "+f"{counter}"+" from "+f"{df.shape[0]}"+" is processed")
         arr = np.array(Image.open(io.BytesIO(img)))
@@ -126,12 +130,15 @@ def validate_model(model,scaler):
     
 
     # Validation Daten laden und Features extrahieren
-    df_val = pd.read_parquet('data/validation/')
+    df_val = pd.read_parquet('artifacts/validation_cleaned.parquet')
     df_val['label'] = df_val['source_class'].apply(lambda x: 0 if x == 0 else 1)
+    df_real = df_val[df_val['label']==0]
+    df_ai = df_val[df_val['label']==1].sample(n=len(df_real),random_state=1)
+    df_balanced = pd.concat([df_real,df_ai]).sample(frac=1,random_state=1)
 
     X_val = []
     y_val = []
-    for img, label in zip(df_val['image'], df_val['label']):
+    for img, label in zip(df_balanced['image'], df_balanced['label']):
         arr = np.array(Image.open(io.BytesIO(img)))
         features = []
         features += list(process_rgb_values(arr).values())
@@ -164,4 +171,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
